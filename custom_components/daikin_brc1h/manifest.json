@@ -1,5 +1,5 @@
 {
-  "domain": "kadoma",
+  "domain": "daikin_brc1h",
   "name": "Daikin BRC1H thermostats",
   "codeowners": [
     "@ldotlopez"
@@ -8,9 +8,9 @@
   "dependencies": [
     "bluetooth_adapters"
   ],
-  "documentation": "https://github.com/ldotlopez/ha-kadoma",
+  "documentation": "https://github.com/ldotlopez/ha-daikin_brc1h",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/ldotlopez/ha-kadoma/issues",
+  "issue_tracker": "https://github.com/ldotlopez/ha-daikin_brc1h/issues",
   "version": "0.0.0",
   "requirements": [
     "kadoma==0.0.1"
