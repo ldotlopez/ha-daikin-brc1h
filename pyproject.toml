@@ -34,6 +34,8 @@ select = [
     "ALL",
 ]
 ignore = [
+    "BLE001", # Catch Exception
+    "D102",   # Missing doc strings
     "ERA001", # Commented-out code
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
     "D203", # no-blank-line-before-class (incompatible with formatter)
