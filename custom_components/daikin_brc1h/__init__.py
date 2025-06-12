@@ -2,7 +2,7 @@
 Custom integration to integrate integration_blueprint with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/ludeeus/integration_blueprint
+https://github.com/ldotlopez/ha-kadoma
 """
 
 from __future__ import annotations
@@ -24,11 +24,7 @@ if TYPE_CHECKING:
 
     from .data import IntegrationKadomaConfigEntry
 
-PLATFORMS: list[Platform] = [
-    Platform.SENSOR,
-    Platform.BINARY_SENSOR,
-    Platform.SWITCH,
-]
+PLATFORMS: list[Platform] = [Platform.CLIMATE]
 
 
 # https://developers.home-assistant.io/docs/config_entries_index/#setting-up-an-entry

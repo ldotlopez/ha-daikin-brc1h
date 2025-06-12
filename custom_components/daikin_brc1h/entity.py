@@ -5,14 +5,14 @@ from __future__ import annotations
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTRIBUTION
+# from .const import ATTRIBUTION
 from .coordinator import KadomaDataUpdateCoordinator
 
 
 class IntegrationKadomaEntity(CoordinatorEntity[KadomaDataUpdateCoordinator]):
     """KadomaEntity class."""
 
-    _attr_attribution = ATTRIBUTION
+    # _attr_attribution = ATTRIBUTION
 
     def __init__(self, coordinator: KadomaDataUpdateCoordinator) -> None:
         """Initialize."""
