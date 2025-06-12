@@ -1,0 +1,27 @@
+[project]
+name = 'ha-kadoma'
+version = '0.0.0'
+requires-python = '>= 3.13'
+dependencies = [
+    "kadoma>=0.0.1"
+]
+
+[tool.black]
+target-version = ['py313']
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+files = ["custom_components/daikin_brc1h"]
+
+[tool.pyupgrade]
+addopts = "--py313-plus"
+
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.13",
+    "homeassistant>=2025.1.0",
+]
