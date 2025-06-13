@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "description": "If you need help with the configuration have a look here: https://github.com/ldotlopez/ha-kadoma",
+        "description": "If you need help with the configuration have a look here: https://github.com/ldotlopez/ha-daikin-brc1h",
         "data": {
           "username": "Username",
           "password": "Password"

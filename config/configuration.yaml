@@ -9,4 +9,4 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.kadoma: debug
+    custom_components.daikin_brc1h: debug

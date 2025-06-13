@@ -1,5 +1,5 @@
 {
-  "name": "ldotlopez/ha-kadoma",
+  "name": "ldotlopez/ha-daikin-brc1h",
   "image": "mcr.microsoft.com/devcontainers/python:3.13",
   "postCreateCommand": "scripts/setup",
   "forwardPorts": [

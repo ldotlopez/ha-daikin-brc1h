@@ -51,7 +51,7 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
             scanner = bluetooth.async_get_scanner(self.hass)
             devices = await scanner.discover(timeout=BLUETOOTH_DISCOVERY_TIMEOUT)
             # opts = ["{} ({})".format(d.name or d.address, d.address) for d in devices]
-            opts = [d.address for d in devices]
+            opts = sorted([d.address for d in devices])
 
         return self.async_show_form(
             step_id="user",
@@ -125,17 +125,16 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
     #     )
 
     async def _test_device(self, address: str) -> None:
-        scanner = bluetooth.async_get_scanner(self.hass)
-
-        dev = await scanner.find_device_by_address(
-            address, timeout=BLUETOOTH_DISCOVERY_TIMEOUT
+        dev = bluetooth.async_ble_device_from_address(
+            self.hass, address, connectable=True
         )
         if dev is None:
             raise ValueError(dev)
 
         async with get_transport(dev) as tr:
             unit = Unit(tr)
-            await unit.get_info()
+            info = await unit.get_info()
+            LOGGER.info(f"got info! {info!r}")
 
     # async def _test_credentials(self, username: str, password: str) -> None:
     #     """Validate credentials."""

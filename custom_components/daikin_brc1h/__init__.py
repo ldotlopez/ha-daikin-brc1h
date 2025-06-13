@@ -2,7 +2,7 @@
 Custom integration to integrate integration_blueprint with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/ldotlopez/ha-kadoma
+https://github.com/ldotlopez/ha-daikin-brc1h
 """
 
 from __future__ import annotations

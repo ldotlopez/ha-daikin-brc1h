@@ -1,30 +1,37 @@
 [project]
-name = 'ha-kadoma'
+name = 'ha-daikin-brc1h'
 version = '0.0.0'
-requires-python = '>= 3.13'
 dependencies = [
     "kadoma>=0.0.1"
 ]
+license = "MIT"
+license-files = ["LICENSE" ]
+requires-python = '>= 3.13'
 
 [dependency-groups]
 dev = [
+    "certifi>=2025.4.26",
+    "homeassistant>=2025.1.0",
     "ipdb>=0.13.13",
     "pre-commit>=4.2.0",
     "ruff>=0.11.13",
-    "homeassistant>=2025.1.0",
 ]
 
+# [build-system]
+# requires = ["setuptools>=40.8.0", "wheel"]
+# build-backend = "setuptools.build_meta"
+
+# [tool.setuptools]
+# packages = ["custom_components/daikin_brc1h"]
+
 [tool.black]
-target-version = ['py313']
+target-version = ["py313"]
 
 [tool.isort]
 profile = "black"
 
 [tool.mypy]
 files = ["custom_components/daikin_brc1h"]
-
-[tool.pyupgrade]
-addopts = "--py313-plus"
 
 [tool.ruff]
 target-version = "py313"
@@ -34,21 +41,24 @@ select = [
     "ALL",
 ]
 ignore = [
-    "BLE001", # Catch Exception
-    "D102",   # Missing doc strings
-    "ERA001", # Commented-out code
-    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
-    "D203", # no-blank-line-before-class (incompatible with formatter)
-    "D212", # multi-line-summary-first-line (incompatible with formatter)
+    "ANN401", # dynamically typed expressions (typing.Any) are disallowed
+    "BLE001", # catch Exception
     "COM812", # incompatible with formatter
+    "D102",   # missing doc strings
+    "D203",   # no-blank-line-before-class (incompatible with formatter)
+    "D212",   # multi-line-summary-first-line (incompatible with formatter)
+    "ERA001", # commented-out code
     "ISC001", # incompatible with formatter
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 
-[tool.ruff.lint.mccabe]
-max-complexity = 25
+[tool.pyupgrade]
+addopts = "--py313-plus"
