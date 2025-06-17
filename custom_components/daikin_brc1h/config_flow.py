@@ -30,7 +30,7 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
                 await self._test_device(user_input[CONF_ADDRESS])
 
             except Exception as exception:
-                LOGGER.warning("Generic exception catched: {exception.__class__}")
+                LOGGER.warning(f"Generic exception catched: {exception.__class__}")
                 LOGGER.warning(exception)
                 _errors["generic"] = str(exception)
 
@@ -125,22 +125,13 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
     #     )
 
     async def _test_device(self, address: str) -> None:
-        dev = bluetooth.async_ble_device_from_address(
+        device = bluetooth.async_ble_device_from_address(
             self.hass, address, connectable=True
         )
-        if dev is None:
-            raise ValueError(dev)
+        if device is None:
+            raise ValueError(address)
 
-        async with get_transport(dev) as tr:
-            unit = Unit(tr)
+        async with get_transport(device) as transport:
+            unit = Unit(transport)
             info = await unit.get_info()
-            LOGGER.info(f"got info! {info!r}")
-
-    # async def _test_credentials(self, username: str, password: str) -> None:
-    #     """Validate credentials."""
-    #     client = IntegrationKadomaApiClient(
-    #         username=username,
-    #         password=password,
-    #         session=async_create_clientsession(self.hass),
-    #     )
-    #     await client.async_get_data()
+            LOGGER.info(f"Successfully connected to '{address}': {info!r}")

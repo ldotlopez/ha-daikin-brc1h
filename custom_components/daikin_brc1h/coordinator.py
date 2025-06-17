@@ -1,4 +1,4 @@
-"""DataUpdateCoordinator for integration_blueprint."""
+"""DataUpdateCoordinator for daikin_brc1h."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Any:
         """Update data via library."""
         try:
-            return await self.config_entry.runtime_data.client.async_get_data()
+            return await self.config_entry.runtime_data.unit.get_status()
         except IntegrationKadomaApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
         except IntegrationKadomaApiClientError as exception:

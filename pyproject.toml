@@ -2,6 +2,8 @@
 name = 'ha-daikin-brc1h'
 version = '0.0.0'
 dependencies = [
+    "certifi>=2025.4.26",
+    "homeassistant>=2025.1.0",
     "kadoma>=0.0.1"
 ]
 license = "MIT"
@@ -10,8 +12,6 @@ requires-python = '>= 3.13'
 
 [dependency-groups]
 dev = [
-    "certifi>=2025.4.26",
-    "homeassistant>=2025.1.0",
     "ipdb>=0.13.13",
     "pre-commit>=4.2.0",
     "ruff>=0.11.13",
@@ -42,13 +42,24 @@ select = [
 ]
 ignore = [
     "ANN401", # dynamically typed expressions (typing.Any) are disallowed
-    "BLE001", # catch Exception
     "COM812", # incompatible with formatter
-    "D102",   # missing doc strings
     "D203",   # no-blank-line-before-class (incompatible with formatter)
     "D212",   # multi-line-summary-first-line (incompatible with formatter)
-    "ERA001", # commented-out code
     "ISC001", # incompatible with formatter
+    # daikin_rc1h
+    "ANN003", # Missing type annotation for `**kwargs`
+    "ARG002", # Unused method argument: `kwargs`
+    "ARG002", # Unused method argument: `kwargs`
+    "BLE001", # catch Exception
+    "D102",   # missing doc strings
+    "D401",   # doc strings
+    "ERA001", # commented-out code
+    "FIX001" , # Line contains FIXME, consider resolving the issue
+    "TD001",  # Invalid TODO tag: `FIXME`
+    "TD002" , # Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...`
+    "TD003" , # Missing issue link for this TODO
+    "TD004" , # Missing colon in TODO
+    "TD005" , # Missing issue description after `TODO`
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

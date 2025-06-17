@@ -1,5 +1,5 @@
 """
-Custom integration to integrate integration_blueprint with Home Assistant.
+Custom integration to integrate daikin_brc1h with Home Assistant.
 
 For more details about this integration, please refer to
 https://github.com/ldotlopez/ha-daikin-brc1h
@@ -7,14 +7,15 @@ https://github.com/ldotlopez/ha-daikin-brc1h
 
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import bleak
+import kadoma
+import kadoma.transport
+from homeassistant.components import bluetooth
+from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .api import IntegrationKadomaApiClient
 from .const import DOMAIN, LOGGER
 from .coordinator import KadomaDataUpdateCoordinator
 from .data import IntegrationKadomaData
@@ -27,7 +28,6 @@ if TYPE_CHECKING:
 PLATFORMS: list[Platform] = [Platform.CLIMATE]
 
 
-# https://developers.home-assistant.io/docs/config_entries_index/#setting-up-an-entry
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: IntegrationKadomaConfigEntry,
@@ -37,14 +37,24 @@ async def async_setup_entry(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
-        update_interval=timedelta(hours=1),
+        # update_interval=timedelta(hours=1),
     )
+
+    device = bluetooth.async_ble_device_from_address(
+        hass, entry.data[CONF_ADDRESS], connectable=True
+    )
+    if device is None:
+        LOGGER.error(f"Cannt get ble device for {entry.data[CONF_ADDRESS]}")
+        return False
+
+    client = bleak.BleakClient(device)
+    await client.connect()
+
+    transport = kadoma.transport.Transport(client)
+    await transport.start()
+
     entry.runtime_data = IntegrationKadomaData(
-        client=IntegrationKadomaApiClient(
-            username=entry.data[CONF_USERNAME],
-            password=entry.data[CONF_PASSWORD],
-            session=async_get_clientsession(hass),
-        ),
+        unit=kadoma.Unit(transport=transport),
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
     )
