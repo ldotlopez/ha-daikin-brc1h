@@ -16,7 +16,7 @@ from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import DOMAIN, LOGGER
+from .const import COORDINATOR_UPDATE_INTERVAL, DOMAIN, LOGGER
 from .coordinator import KadomaDataUpdateCoordinator
 from .data import IntegrationKadomaData
 
@@ -37,14 +37,14 @@ async def async_setup_entry(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
-        # update_interval=timedelta(hours=1),
+        update_interval=COORDINATOR_UPDATE_INTERVAL,
     )
 
     device = bluetooth.async_ble_device_from_address(
         hass, entry.data[CONF_ADDRESS], connectable=True
     )
     if device is None:
-        LOGGER.error(f"Cannt get ble device for {entry.data[CONF_ADDRESS]}")
+        LOGGER.error(f"Unable to get BLE device for '{entry.data[CONF_ADDRESS]}'")
         return False
 
     client = bleak.BleakClient(device)

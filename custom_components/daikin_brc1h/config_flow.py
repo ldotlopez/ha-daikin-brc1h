@@ -30,8 +30,11 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
                 await self._test_device(user_input[CONF_ADDRESS])
 
             except Exception as exception:
-                LOGGER.warning(f"Generic exception catched: {exception.__class__}")
-                LOGGER.warning(exception)
+                LOGGER.warning(
+                    "Generic exception catched: "
+                    f"{exception.__class__.__module__}.{exception.__class__.__name__}"
+                )
+                LOGGER.exception(exception)
                 _errors["generic"] = str(exception)
 
             else:

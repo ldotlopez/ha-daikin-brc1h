@@ -4,21 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .api import (
-    IntegrationKadomaApiClientAuthenticationError,
-    IntegrationKadomaApiClientError,
-)
+from .const import LOGGER
 
 if TYPE_CHECKING:
     from .data import IntegrationKadomaConfigEntry
 
 
-# https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the API."""
+    """Class to manage fetching data from the unit."""
 
     config_entry: IntegrationKadomaConfigEntry
 
@@ -26,7 +21,9 @@ class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
         """Update data via library."""
         try:
             return await self.config_entry.runtime_data.unit.get_status()
-        except IntegrationKadomaApiClientAuthenticationError as exception:
-            raise ConfigEntryAuthFailed(exception) from exception
-        except IntegrationKadomaApiClientError as exception:
-            raise UpdateFailed(exception) from exception
+        except Exception as exception:
+            LOGGER.warning(
+                "Generic exception catched while updating unit status: "
+                f"{exception.__class__.__module__}.{exception.__class__.__name__}"
+            )
+            LOGGER.exception(exception)
