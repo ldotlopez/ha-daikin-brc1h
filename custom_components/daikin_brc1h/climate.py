@@ -89,9 +89,9 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
         self._attr_fan_modes = [
             "auto",
             "low",
-            "low_medium",
+            "medium_low",
             "medium",
-            "high_medium",
+            "medium_high",
             "high",
         ]
 
