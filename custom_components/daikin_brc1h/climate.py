@@ -114,6 +114,10 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
         return self.coordinator.config_entry.runtime_data.unit
 
     @property
+    def available(self) -> bool:
+        return self.coordinator.data["operation_mode"] is not None
+
+    @property
     def hvac_mode(self) -> HVACMode | None:
         if self.coordinator.data["power_state"] is False:
             return HVACMode.OFF
@@ -127,6 +131,10 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
         }
 
         operation_mode = self.coordinator.data["operation_mode"]
+        if operation_mode is None:
+            LOGGER.error("operation mode is unavailable")
+            return None
+
         try:
             return m[operation_mode]
         except KeyError:
@@ -172,18 +180,33 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
             kadoma.FanSpeedValue.MID_LOW: "medium_low",
             kadoma.FanSpeedValue.LOW: "low",
         }
-        int_fan_speed, ext_fan_speed = self.coordinator.data["fan_speed"]
-        if int_fan_speed != ext_fan_speed:
-            LOGGER.error(
-                "Fan speeds for interior ({int_fan_speed.name})"
-                " and exterior ({ext_fan_speed.name}) missmatch."
-                " Choosing interior."
-            )
+        if self.coordinator.data["fan_speed"] is None:
+            LOGGER.error("fan mode is unavailable")
+            return None
+
+        cooling_fan_speed, heating_fan_speed = self.coordinator.data["fan_speed"]
+
+        operation_mode = self.coordinator.data["operation_mode"]
+        if operation_mode is kadoma.OperationModeValue.HEAT:
+            fan_speed = heating_fan_speed
+        elif operation_mode is kadoma.OperationModeValue.COOL:
+            fan_speed = cooling_fan_speed
+        else:
+            LOGGER.warning(f"guessing fan speed for {operation_mode.name} as cooling")
+            fan_speed = cooling_fan_speed
+
+        # if cooling_fan_speed != heating_fan_speed:
+        #     LOGGER.error(
+        #         f"Fan speeds for cooling ({cooling_fan_speed.name})"
+        #         f" and heating ({heating_fan_speed.name}) missmatch."
+        #         " Choosing cooling."
+        #     )
+        #     fan_speed = cooling_fan_speed
 
         try:
-            return m[int_fan_speed]
+            return m[fan_speed]
         except KeyError:
-            LOGGER.warning(f"unsupported fan speed '{int_fan_speed}'")
+            LOGGER.warning(f"unsupported fan speed '{fan_speed}'")
             return None
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
@@ -209,22 +232,37 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
 
     @property
     def target_temperature(self) -> float | None:
-        if self.coordinator.data["operation_mode"] is kadoma.OperationModeValue.HEAT:
-            return self.coordinator.data["set_point"]["heating_set_point"]
+        if self.coordinator.data["set_point"] is None:
+            LOGGER.error("fan mode is unavailable")
+            return None
 
-        if self.coordinator.data["operation_mode"] is kadoma.OperationModeValue.COOL:
-            return self.coordinator.data["set_point"]["cooling_set_point"]
+        operation_mode = self.coordinator.data["operation_mode"]
+        set_point = self.coordinator.data.get("set_point", {})
 
-        if self.coordinator.data["operation_mode"] is kadoma.OperationModeValue.AUTO:
-            cooling = self.coordinator.data["set_point"]["cooling_set_point"]
-            heating = self.coordinator.data["set_point"]["heating_set_point"]
+        if operation_mode is kadoma.OperationModeValue.HEAT:
+            temp = set_point.get("heating_set_point")
 
-            if cooling != heating:
-                LOGGER.error("temperatures in auto mode missmatch")
+        elif operation_mode is kadoma.OperationModeValue.COOL:
+            temp = set_point.get("cooling_set_point")
 
-            return round(heating + cooling / 2)
+        else:  # AUTO ?
+            cooling = set_point.get("cooling_set_point")
+            heating = set_point.get("heating_set_point")
 
-        return None
+            if cooling is None or heating is None:
+                temp = None
+            else:
+                LOGGER.warning(
+                    f"guessing temperature {operation_mode.name} as the mean"
+                    f"of cooling ({cooling}) and heating ({heating})"
+                )
+                temp = round((heating + cooling) / 2)
+
+        if temp is None:
+            LOGGER.error("set point temperatures are unavailable")
+            return None
+
+        return temp
 
     async def async_set_temperature(self, *, temperature: float, **kwargs) -> None:
         temperature = round(temperature)

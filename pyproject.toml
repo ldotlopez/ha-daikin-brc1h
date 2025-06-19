@@ -4,7 +4,6 @@ version = '0.0.0'
 dependencies = [
     "certifi>=2025.4.26",
     "homeassistant>=2025.1.0",
-    "kadoma>=0.0.1"
 ]
 license = "MIT"
 license-files = ["LICENSE" ]
@@ -47,6 +46,7 @@ ignore = [
     "D212",   # multi-line-summary-first-line (incompatible with formatter)
     "ISC001", # incompatible with formatter
     # daikin_rc1h
+    "ANN002", # Missing type annotation for `*args`
     "ANN003", # Missing type annotation for `**kwargs`
     "ARG002", # Unused method argument: `kwargs`
     "ARG002", # Unused method argument: `kwargs`
