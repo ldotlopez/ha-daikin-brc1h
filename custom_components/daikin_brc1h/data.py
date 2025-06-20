@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    import asyncio
+
     import kadoma
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
@@ -21,5 +23,6 @@ class IntegrationKadomaData:
     """Data for the Kadoma integration."""
 
     unit: kadoma.Unit
+    lock: asyncio.Lock
     coordinator: KadomaDataUpdateCoordinator
     integration: Integration

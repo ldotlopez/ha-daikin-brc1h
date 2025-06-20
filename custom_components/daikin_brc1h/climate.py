@@ -192,16 +192,18 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
         elif operation_mode is kadoma.OperationModeValue.COOL:
             fan_speed = cooling_fan_speed
         else:
-            LOGGER.warning(f"guessing fan speed for {operation_mode.name} as cooling")
+            if cooling_fan_speed != heating_fan_speed:
+                LOGGER.warning(
+                    f"Fan speeds for"
+                    f" cooling ({cooling_fan_speed.name})"
+                    f" and heating ({heating_fan_speed.name})"
+                    f" missmatch."
+                )
+            LOGGER.info(
+                f"Using cooling fan speed for mode '{operation_mode.name}'"
+                " but it may be incorrect"
+            )
             fan_speed = cooling_fan_speed
-
-        # if cooling_fan_speed != heating_fan_speed:
-        #     LOGGER.error(
-        #         f"Fan speeds for cooling ({cooling_fan_speed.name})"
-        #         f" and heating ({heating_fan_speed.name}) missmatch."
-        #         " Choosing cooling."
-        #     )
-        #     fan_speed = cooling_fan_speed
 
         try:
             return m[fan_speed]
@@ -245,6 +247,10 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
         elif operation_mode is kadoma.OperationModeValue.COOL:
             temp = set_point.get("cooling_set_point")
 
+        elif operation_mode is kadoma.OperationModeValue.FAN:
+            # FAN has no temperature
+            return None
+
         else:  # AUTO ?
             cooling = set_point.get("cooling_set_point")
             heating = set_point.get("heating_set_point")
@@ -253,8 +259,8 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
                 temp = None
             else:
                 LOGGER.warning(
-                    f"guessing temperature {operation_mode.name} as the mean"
-                    f"of cooling ({cooling}) and heating ({heating})"
+                    f"guessing temperature in mode '{operation_mode.name}' as the mean"
+                    f" of cooling ({cooling}) and heating ({heating})"
                 )
                 temp = round((heating + cooling) / 2)
 

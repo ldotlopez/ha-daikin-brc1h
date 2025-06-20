@@ -15,7 +15,15 @@ from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .const import COORDINATOR_UPDATE_INTERVAL, DOMAIN, LOGGER
+from custom_components.daikin_brc1h.retry import awaitable_retriable_ctx
+
+from .const import (
+    BLUETOOTH_DELAY,
+    COORDINATOR_UPDATE_INTERVAL,
+    DOMAIN,
+    DOMAIN_LOCK_KEY,
+    LOGGER,
+)
 from .coordinator import KadomaDataUpdateCoordinator
 from .data import IntegrationKadomaData
 
@@ -32,8 +40,8 @@ def setup_domain_data(hass: HomeAssistant) -> None:
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
-    if "lock" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["lock"] = asyncio.Lock()
+    if DOMAIN_LOCK_KEY not in hass.data[DOMAIN]:
+        hass.data[DOMAIN][DOMAIN_LOCK_KEY] = asyncio.Lock()
 
 
 async def async_setup_entry(
@@ -48,21 +56,30 @@ async def async_setup_entry(
         logger=LOGGER,
         name=DOMAIN,
         update_interval=COORDINATOR_UPDATE_INTERVAL,
-        lock=hass.data[DOMAIN]["lock"],
+        lock=hass.data[DOMAIN][DOMAIN_LOCK_KEY],
     )
 
-    device = bluetooth.async_ble_device_from_address(
-        hass, entry.data[CONF_ADDRESS], connectable=True
-    )
+    address = entry.data[CONF_ADDRESS]
+    device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
     if device is None:
         LOGGER.error(f"Unable to get BLE device for '{entry.data[CONF_ADDRESS]}'")
         return False
 
-    unit = kadoma.Unit(device)
-    await unit.start()
+    unit = kadoma.Unit(device, delay=BLUETOOTH_DELAY)
+
+    try:
+        with awaitable_retriable_ctx(
+            unit.start, n=3, allowed_exceptions=[asyncio.TimeoutError]
+        ) as start:
+            await start()
+
+    except TimeoutError as e:
+        LOGGER.error(f"Unable to start unit '{address}': {e}")
+        return False
 
     entry.runtime_data = IntegrationKadomaData(
         unit=unit,
+        lock=hass.data[DOMAIN][DOMAIN_LOCK_KEY],
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
     )
