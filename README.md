@@ -6,19 +6,27 @@ Custom integration for Daikin BRC1H thermostats
 
 This integration only works with already paired devices.
 
-In order to pair a new thermostat you new to stop Home Assistant, run this instructions and start again Home Assistant
+In order to pair a new thermostat, run this instructions:
+
+It's possible that you need to stop Home Assistant to pair the device.
 
 ```shell
-sudo systemctl restart bluetooth
+# Restart bluetooth service to avoid complications
+$ sudo systemctl restart bluetooth
 
+# Enter bluetootctl shell
+$ bluetooth
+
+# Once into bluetootctl
 scan le
-devices
-pair  E4:A6:34:xx:xx:xx
+devices  # <-- This will show some devices
+pair E4:A6:34:xx:xx:xx
 ```
 
 ## Next steps
 
 These are some next steps you may want to look into:
+
 - Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
 - Add brand images (logo/icon) to https://github.com/home-assistant/brands.
 - Create your first release.

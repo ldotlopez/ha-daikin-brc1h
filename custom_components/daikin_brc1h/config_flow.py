@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bleak.exc
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components import bluetooth
@@ -29,13 +30,13 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
             try:
                 await self._test_device(user_input[CONF_ADDRESS])
 
-            except Exception as exception:
+            except bleak.exc.BleakError as e:
                 LOGGER.warning(
-                    "Generic exception catched: "
-                    f"{exception.__class__.__module__}.{exception.__class__.__name__}"
+                    "Exception catched: "
+                    f"{e.__class__.__module__}.{e.__class__.__name__}"
                 )
-                LOGGER.exception(exception)
-                _errors["generic"] = str(exception)
+                LOGGER.exception(e)
+                _errors["generic"] = str(e)
 
             else:
                 await self.async_set_unique_id(

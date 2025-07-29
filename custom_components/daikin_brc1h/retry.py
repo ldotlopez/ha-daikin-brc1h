@@ -19,94 +19,208 @@
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Iterator
-from contextlib import contextmanager
-from functools import wraps
+from collections.abc import Awaitable, Callable
 from typing import Any
+
+AsyncCallable = Callable[..., Awaitable]  # Does python define this anywhere?
 
 LOGGER = logging.getLogger(__name__)
 
-AsyncCallable = Callable[..., Awaitable]  # Why doesn't python define this?
-
-
+DEFAULT_DELAY = 3
 DEFAULT_RETRIES = 3
-DEFAULT_DELAY = 0
 
 
-def awaitable_retriable(
-    allowed_exceptions: type | list[type] | None = None,
-    n: int = DEFAULT_RETRIES,
-    delay: float = DEFAULT_DELAY,
-    recover_awaitable: AsyncCallable | None = None,
-) -> Callable:
-    """Decorator generator."""
-    if allowed_exceptions is None:
-        allowed_exceptions = []
-    elif not isinstance(allowed_exceptions, list):
-        allowed_exceptions = [allowed_exceptions]
-
-    def decorator(awaitable: AsyncCallable) -> AsyncCallable:
-        """Just a pre wrapper that acts as the real decorator."""
-
-        @wraps(awaitable)
-        async def wrapper(*args, **kwargs) -> Any:
-            """Call main awaitable under the retry loop."""
-            for x in range(n):
-                try:
-                    return await awaitable(*args, **kwargs)
-                except Exception as e:
-                    if e.__class__ not in allowed_exceptions:
-                        raise  # not my job
-
-                    LOGGER.debug(
-                        f"{awaitable.__name__}({args}, {kwargs})"  # noqa: G004
-                        f" failed at try #{x + 1} with {e!r}"
-                    )
-                    if x + 1 == n:
-                        raise  # Max attempts
-
-                    if recover_awaitable:
-                        await recover_awaitable(*args, **kwargs)
-
-                    if delay:
-                        await asyncio.sleep(delay)
-
-            excmsg = "this code should be unreacheable."
-            raise RuntimeError(excmsg)
-
-        return wrapper
-
-    return decorator
-
-
-@contextmanager
-def awaitable_retriable_ctx(
-    awaitable: AsyncCallable, *args, **kwargs
-) -> Iterator[AsyncCallable]:
-    """Wrapper around awaitable_retriable decorator to act as context manager."""
-    yield awaitable_retriable(*args, **kwargs)(awaitable)
-
-
-def make_awaitable_retriable(
-    awaitable: AsyncCallable, *args, **kwargs
-) -> AsyncCallable:
+class GiveUpError(Exception):
     """
-    Wrapper around awaitable_retriable decorator to create the retriable
-    awaitable.
-    """  # noqa: D205
-    return awaitable_retriable(*args, **kwargs)(awaitable)
+    Raised when all retry attempts have failed for an operation.
+
+    This exception signals that a retriable operation (like unit recovery
+    or data fetching) has exhausted all its allowed attempts without success.
+
+    Attributes:
+        errors (list[Exception]): A list containing all the exceptions that
+                                  were caught during the failed attempts.
+
+    """
 
 
-async def main() -> None:
-    """Test func."""
+async def await_with_retry(
+    awaitable: AsyncCallable,
+    retries: int = DEFAULT_RETRIES,
+    delay: float | None = None,
+    catch_exceptions: type[Exception] | tuple[type[Exception], ...] | None = None,
+    recover: AsyncCallable | None = None,
+    log_prefix: str = "",
+) -> Any:
+    """
+    Awaits a callable with a retry mechanism and optional recovery.
 
-    async def test_fn() -> None:
-        raise ValueError
+    This function attempts to execute an asynchronous callable multiple times.
+    If the callable raises one of the specified `catch_exceptions`, the function
+    will retry after an optional delay and can execute a recovery callable.
+    If the callable succeeds, its result is returned immediately.
 
-    with awaitable_retriable_ctx(test_fn, allowed_exceptions=[ValueError]) as fn:
-        print(await fn())  # noqa: T201
+    Args:
+        awaitable: An asynchronous callable (a function or method that returns
+                   an awaitable, e.g., a coroutine). This is the operation
+                   that will be retried.
+        retries: The maximum number of attempts to make, including the initial
+                 one. Defaults to `DEFAULT_RETRIES`.
+        delay: The time in seconds to wait between retry attempts if an
+               `catch_exceptions` is caught. If `None`, no delay.
+        catch_exceptions: A single exception type or a tuple of exception types
+                          to catch and trigger a retry. If `None`, no specific
+                          exceptions are caught for retry (any `Exception` not
+                          caught will be re-raised immediately).
+        recover: An optional asynchronous callable to execute after a failed
+                 attempt (due to a `catch_exceptions`) and before the next retry.
+                 This can be used to reset state or perform cleanup.
+        log_prefix: A string prefix to add to all log messages generated by
+                    this function, useful for identifying logs from specific calls.
+
+    Returns:
+        The result of the `awaitable` if it succeeds within the retry limits.
+
+    Raises:
+        GiveUpError: If all `retries` attempts fail due to `catch_exceptions`.
+                     The `GiveUpError` will contain a list of all exceptions
+                     caught during the failed attempts.
+        Exception: Any exception raised by `awaitable` that is *not* included
+                   in `catch_exceptions` will be re-raised immediately,
+                   without further retries.
+
+    """
+    if catch_exceptions is None:
+        catch_exceptions = ()
+
+    if not isinstance(catch_exceptions, tuple):
+        catch_exceptions = (catch_exceptions,)
+
+    log_prefix = log_prefix or "{awaitable.__name__}: "
+
+    errors = []
+
+    for attempt in range(retries):
+        step = f"{attempt + 1}/{retries}"
+
+        LOGGER.warning(f"{log_prefix}attempt #{step}...")
+
+        try:
+            ret = await awaitable()
+            LOGGER.warning(f"{log_prefix}attempt #{step}: success")
+            return ret
+
+        except Exception as e:
+            if e.__class__ not in catch_exceptions:
+                raise  # not my job
+
+            errors.append(e)
+            LOGGER.warning(f"{log_prefix}attempt #{step}: failed ({e!r})")
+
+            # If this was the last attempt, don't sleep or recover
+            if attempt + 1 == retries:
+                break  # Exit loop, then fall through to "giving up" below
+
+            if delay:
+                await asyncio.sleep(delay)
+
+            if recover:
+                await recover()
+
+    # After the loop, if we're here, it means all attempts failed.
+    LOGGER.warning(f"{log_prefix}giving up")
+    raise GiveUpError(errors)
 
 
-if __name__ == "__main__":
-    LOGGER.setLevel(logging.DEBUG)
-    asyncio.run(main())
+# =================
+# Remove this after getting the good stuff
+# =================
+
+
+#
+# Similar to await_with_retry, but this is a decorator
+#
+# def awaitable_retriable(
+#     allowed_exceptions: type | list[type] | None = None,
+#     n: int = DEFAULT_RETRIES,
+#     delay: float = DEFAULT_DELAY,
+#     recover_awaitable: AsyncCallable | None = None,
+# ) -> Callable:
+#     """Decorator generator."""
+#     if allowed_exceptions is None:
+#         allowed_exceptions = []
+#     elif not isinstance(allowed_exceptions, list):
+#         allowed_exceptions = [allowed_exceptions]
+
+#     def decorator(awaitable: AsyncCallable) -> AsyncCallable:
+#         """Just a pre wrapper that acts as the real decorator."""
+
+#         @wraps(awaitable)
+#         async def wrapper(*args, **kwargs) -> Any:
+#             """Call main awaitable under the retry loop."""
+#             errors = []
+#             for x in range(n):
+#                 step = f"{x + 1}/{n}"
+
+#                 try:
+#                     LOGGER.debug(f"{awaitable.__name__}: attempt {step}...")
+#                     ret = await awaitable(*args, **kwargs)
+#                     LOGGER.debug(f"{awaitable.__name__}: attempt {step} success")
+#                     return ret
+
+#                 except Exception as e:
+#                     errors.append(e)
+#                     LOGGER.debug(f"{awaitable.__name__}: attempt {step} failed")
+
+#                     if e.__class__ not in allowed_exceptions:
+#                         raise  # not my job
+
+#                     if x + 1 == n:
+#                         LOGGER.debug(f"{awaitable.__name__}: giving up")
+#                         raise GiveUpError(errors)  # Max attempts
+
+#                     if recover_awaitable:
+#                         await recover_awaitable(*args, **kwargs)
+
+#                     if delay:
+#                         await asyncio.sleep(delay)
+
+#             excmsg = "this code should be unreacheable."
+#             raise RuntimeError(excmsg)
+
+#         return wrapper
+
+#     return decorator
+
+
+# @contextmanager
+# def awaitable_retriable_ctx(
+#     awaitable: AsyncCallable, *args, **kwargs
+# ) -> Iterator[AsyncCallable]:
+#     """Wrapper around awaitable_retriable decorator to act as context manager."""
+#     yield awaitable_retriable(*args, **kwargs)(awaitable)
+
+
+# def make_awaitable_retriable(
+#     awaitable: AsyncCallable, *args, **kwargs
+# ) -> AsyncCallable:
+#     """
+#     Wrapper around awaitable_retriable decorator to create the retriable
+#     awaitable.
+#     """
+#     return awaitable_retriable(*args, **kwargs)(awaitable)
+
+
+# async def main() -> None:
+#     """Test func."""
+
+#     async def test_fn() -> None:
+#         raise ValueError
+
+#     with awaitable_retriable_ctx(test_fn, allowed_exceptions=[ValueError]) as fn:
+#         print(await fn())
+
+
+# if __name__ == "__main__":
+#     LOGGER.setLevel(logging.DEBUG)
+#     asyncio.run(main())
