@@ -30,20 +30,6 @@ DEFAULT_DELAY = 3
 DEFAULT_RETRIES = 3
 
 
-class GiveUpError(Exception):
-    """
-    Raised when all retry attempts have failed for an operation.
-
-    This exception signals that a retriable operation (like unit recovery
-    or data fetching) has exhausted all its allowed attempts without success.
-
-    Attributes:
-        errors (list[Exception]): A list containing all the exceptions that
-                                  were caught during the failed attempts.
-
-    """
-
-
 async def await_with_retry(
     awaitable: AsyncCallable,
     retries: int = DEFAULT_RETRIES,
@@ -115,25 +101,46 @@ async def await_with_retry(
                 raise  # not my job
 
             errors.append(e)
-            LOGGER.warning(f"{log_prefix}attempt #{step}: failed ({e!r})")
+            LOGGER.warning(f"{log_prefix}attempt #{step}: failed with {e!r}")
 
-            # If this was the last attempt, don't sleep or recover
-            if attempt + 1 == retries:
-                break  # Exit loop, then fall through to "giving up" below
+        # If this was the last attempt, don't sleep or recover
+        if attempt + 1 == retries:
+            break  # Exit loop, then fall through to "giving up" below
 
-            if delay:
-                await asyncio.sleep(delay)
+        if delay:
+            await asyncio.sleep(delay)
 
-            if recover:
+        if recover:
+            try:
+                LOGGER.warning(
+                    f"{log_prefix}attempt #{step}: running recovery routine "
+                    f"{recover.__name__}"
+                )
                 await recover()
+            except GiveUpError:
+                raise
 
     # After the loop, if we're here, it means all attempts failed.
     LOGGER.warning(f"{log_prefix}giving up")
-    raise GiveUpError(errors)
+    raise GiveUpError(errors) from errors[-1]
+
+
+class GiveUpError(Exception):
+    """
+    Raised when all retry attempts have failed for an operation.
+
+    This exception signals that a retriable operation (like unit recovery
+    or data fetching) has exhausted all its allowed attempts without success.
+
+    Attributes:
+        errors (list[Exception]): A list containing all the exceptions that
+                                  were caught during the failed attempts.
+
+    """
 
 
 # =================
-# Remove this after getting the good stuff
+# Remove this code after getting the good bites from it
 # =================
 
 

@@ -1,10 +1,10 @@
 [project]
 name = 'ha-daikin-brc1h'
-version = '0.0.0'
+version = '0.0.1'
 dependencies = [
     "certifi>=2025.4.26",
     "homeassistant>=2025.1.0",
-    "kadoma>=0.0.3.dev0",
+    "kadoma>=0.0.3",
 ]
 license = "MIT"
 license-files = ["LICENSE" ]
@@ -52,14 +52,15 @@ ignore = [
     "ARG002", # Unused method argument: `kwargs`
     "ARG002", # Unused method argument: `kwargs`
     "D102",   # missing doc strings
+    "D401",   # doc strings
+    "ERA001", # commented-out code
     "FIX002", # Line contains TODO, consider resolving the issue
+    "G004",   # Logging statement uses f-string
+    "PLR0913", # Too many arguments in function definition
     "TD002", # Missing author in TODO
     "TD003", # Missing issue link for this TODO
     "TD005", # Missing issue description after `TODO`
-    "D401",   # doc strings
-    "ERA001", # commented-out code
-    "G004",   # Logging statement uses f-string
-    "PLR0913", # Too many arguments in function definition
+    "TRY203", # Remove exception handler; error is immediately re-raised
     "TRY300", # Consider moving this statement to an `else` block
 ]
 

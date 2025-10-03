@@ -81,7 +81,7 @@ async def async_setup_entry(
     try:
         await await_with_retry(
             transport.start,
-            catch_exceptions=(asyncio.TimeoutError, bleak.exc.BleakError),
+            catch_exceptions=(TimeoutError, bleak.exc.BleakError),
             log_prefix=f"{address}: transport.start() ",
         )
 

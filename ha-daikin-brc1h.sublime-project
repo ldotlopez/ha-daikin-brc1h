@@ -1,0 +1,35 @@
+{
+    "folders":
+    [
+        {
+            "path": ".",
+            "follow_symlinks": true,
+            "file_exclude_patterns": [
+                "*.pyc",
+                "*.swp"
+            ],
+            "folder_exclude_patterns": [
+                "*.egg-info",
+                ".mypy_cache",
+                ".ruff_cache",
+                ".venv",
+                "__pycache__",
+                "dist",
+            ],
+        }
+    ],
+    "settings": {
+        "sublack.black_on_save": true,
+
+        "isorted.isort_on_save": true,
+        "isorted.profile": "black",
+
+        "SublimeLinter.linters.flake8.disable": true,
+
+        "SublimeLinter.linters.mypy.disable": false,
+        // "SublimeLinter.linters.mypy.args": ["--ignore-missing-imports"],
+
+        "SublimeLinter.linters.pycodestyle.disable": true,
+    }
+
+}
