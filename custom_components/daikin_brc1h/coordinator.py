@@ -76,7 +76,7 @@ class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(*args, **kwargs)
         self.integration_lock = integration_lock
 
-    async def _async_update_data(self) -> kadoma.UnitInfo:
+    async def _async_update_data(self) -> kadoma.UnitInfo | None:
         # TODO:
         # Add a random delay if there's more than one integration in this domain
         # to decouple this call from the others.
@@ -85,12 +85,16 @@ class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
         #     await asyncio.sleep(self.update_interval.total_seconds() * 0.1)
 
         addr = self.config_entry.runtime_data.unit.transport.client.address
-        return await await_with_retry(
-            lambda: self.config_entry.runtime_data.unit.get_status(),
-            catch_exceptions=(asyncio.TimeoutError, bleak.exc.BleakError),
-            recover=lambda: unit_recover(self.config_entry.runtime_data.unit),
-            log_prefix=f"{addr}: get_status() ",
-        )
+        try:
+            return await await_with_retry(
+                lambda: self.config_entry.runtime_data.unit.get_status(),
+                catch_exceptions=(asyncio.TimeoutError, bleak.exc.BleakError),
+                recover=lambda: unit_recover(self.config_entry.runtime_data.unit),
+                log_prefix=f"{addr}: get_status() ",
+            )
+        except GiveUpError:
+            LOGGER.warning(f"{addr}: is NOT available")
+            return None
 
     # async def _async_update_data(self) -> kadoma.UnitInfo:
     #     async with self.integration_lock:

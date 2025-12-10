@@ -115,7 +115,10 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
 
     @property
     def available(self) -> bool:
-        return self.coordinator.data["operation_mode"] is not None
+        return (
+            self.coordinator.data is not None
+            and self.coordinator.data["operation_mode"] is not None
+        )
 
     @property
     def hvac_mode(self) -> HVACMode | None:
