@@ -16,6 +16,7 @@ TEMP_STEP = 1.0
 DOMAIN_LOCK_KEY = "lock"
 MAX_UNIT_RESET_ATTEMPS = 3
 RECOVER_DELAY = 3
+REPOSITORY_URL = "https://github.com/ldotlopez/ha-daikin-brc1h"
 
 if os.environ.get("HA_DAIKIN_BRC1H_DEBUG", "0") == "0":
     COORDINATOR_UPDATE_INTERVAL = timedelta(seconds=60)

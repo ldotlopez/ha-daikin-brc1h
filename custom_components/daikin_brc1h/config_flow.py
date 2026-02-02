@@ -12,7 +12,7 @@ from kadoma import Unit
 from kadoma.transport import get_transport
 from slugify import slugify
 
-from .const import BLUETOOTH_DISCOVERY_TIMEOUT, DOMAIN, LOGGER
+from .const import BLUETOOTH_DISCOVERY_TIMEOUT, DOMAIN, LOGGER, REPOSITORY_URL
 
 
 class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
@@ -69,6 +69,7 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
                     )
                 }
             ),
+            description_placeholders={"repository_url": REPOSITORY_URL},
             errors=_errors,
         )
 
