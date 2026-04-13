@@ -15,7 +15,7 @@ dev = [
     "homeassistant>=2025.4.4",
     "ipdb>=0.13.13",
     "pre-commit>=4.2.0",
-    "ruff>=0.11.13",
+    "ruff>=0.15.10",
 ]
 
 # [build-system]
