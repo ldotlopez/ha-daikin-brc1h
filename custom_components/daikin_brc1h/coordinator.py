@@ -46,11 +46,11 @@ async def unit_recover(unit: kadoma.Unit) -> None:
             if unit.transport.client.is_connected:
                 await unit.stop()
                 await asyncio.sleep(RECOVER_DELAY)
-                LOGGER.debug(f"{addr}: recover #{step} stop successfully ")
+                LOGGER.debug(f"{addr}: recover #{step} stopped successfully")
 
             await unit.start()
-            LOGGER.debug(f"{addr}: recover #{step} start successfully")
-            LOGGER.debug(f"{addr}: recover #{step} unit recovered!")
+            LOGGER.debug(f"{addr}: recover #{step} started successfully")
+            LOGGER.debug(f"{addr}: recover #{step} unit recovered")
             return
 
         except (TimeoutError, bleak.exc.BleakError) as e:
@@ -59,7 +59,8 @@ async def unit_recover(unit: kadoma.Unit) -> None:
 
         except Exception as e:
             LOGGER.debug(
-                f"{addr}: recover #{step} got unhandled exception {e.__class__}"
+                f"{addr}: recover #{step} got unhandled exception"
+                f" {e.__class__.__name__}"
             )
             raise
 
@@ -93,7 +94,7 @@ class KadomaDataUpdateCoordinator(DataUpdateCoordinator):
                 log_prefix=f"{addr}: get_status() ",
             )
         except GiveUpError:
-            LOGGER.warning(f"{addr}: is NOT available")
+            LOGGER.warning(f"{addr}: is not available")
             return None
 
     # async def _async_update_data(self) -> kadoma.UnitInfo:

@@ -32,8 +32,7 @@ class KadomaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: igno
 
             except bleak.exc.BleakError as e:
                 LOGGER.warning(
-                    "Exception catched: "
-                    f"{e.__class__.__module__}.{e.__class__.__name__}"
+                    f"Exception caught: {e.__class__.__module__}.{e.__class__.__name__}"
                 )
                 LOGGER.exception(e)
                 _errors["generic"] = str(e)
