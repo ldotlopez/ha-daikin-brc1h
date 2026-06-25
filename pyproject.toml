@@ -2,7 +2,7 @@
 name = 'ha-daikin-brc1h'
 version = '0.0.1'
 dependencies = [
-    "bleak-retry-connector>=4.4.3",
+    "bleak-retry-connector>=4.6.1",
     "certifi>=2026.6.17",
     "homeassistant>=2025.1.0",
     "kadoma>=0.0.3",
