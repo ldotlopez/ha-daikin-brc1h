@@ -10,27 +10,16 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-import bleak
-import kadoma
-import kadoma.transport
-from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from custom_components.daikin_brc1h.retry import (
-    GiveUpError,
-    await_with_retry,
-)
-
 from .const import (
-    BLUETOOTH_DELAY,
-    BLUETOOTH_DISCOVERY_TIMEOUT,
     COORDINATOR_UPDATE_INTERVAL,
     DOMAIN,
     DOMAIN_LOCK_KEY,
     LOGGER,
 )
-from .coordinator import KadomaDataUpdateCoordinator
+from .coordinator import KadomaDataUpdateCoordinator, hass_get_unit
 from .data import IntegrationKadomaData
 
 if TYPE_CHECKING:
@@ -57,6 +46,8 @@ async def async_setup_entry(
     """Set up this integration using UI."""
     setup_domain_data(hass)
 
+    unit = await hass_get_unit(hass, entry.data[CONF_ADDRESS], name=entry.title)
+
     coordinator = KadomaDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
@@ -64,33 +55,6 @@ async def async_setup_entry(
         update_interval=COORDINATOR_UPDATE_INTERVAL,
         integration_lock=hass.data[DOMAIN][DOMAIN_LOCK_KEY],
     )
-
-    address = entry.data[CONF_ADDRESS]
-    device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
-    if device is None:
-        LOGGER.error(f"Unable to get BLE device for '{entry.data[CONF_ADDRESS]}'")
-        return False
-    # LOGGER.info(f"{entry.title}: got device={device!r}")
-
-    client = bleak.BleakClient(device)
-    # LOGGER.info(f"{entry.title}: got client={client!r}")
-
-    transport = kadoma.transport.Transport(client, timeout=BLUETOOTH_DISCOVERY_TIMEOUT)
-    # LOGGER.info(f"{entry.title}: got transport={transport!r}")
-
-    try:
-        await await_with_retry(
-            transport.start,
-            catch_exceptions=(TimeoutError, bleak.exc.BleakError),
-            log_prefix=f"{address}: transport.start() ",
-        )
-
-    except GiveUpError as e:
-        LOGGER.error(f"Unable to start unit '{address}': TimeoutError ({e!r})")
-        return False
-
-    unit = kadoma.Unit(transport, delay=BLUETOOTH_DELAY)
-    LOGGER.info(f"{entry.title}: got unit={unit!r}")
 
     entry.runtime_data = IntegrationKadomaData(
         unit=unit,

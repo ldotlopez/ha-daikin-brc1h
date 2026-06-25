@@ -20,25 +20,25 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any
-
-AsyncCallable = Callable[..., Awaitable]  # Does python define this anywhere?
+from typing import TypeVar
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DELAY = 3
 DEFAULT_RETRIES = 3
 
+T = TypeVar("T")
 
-async def await_with_retry(
-    awaitable: AsyncCallable,
+
+async def await_with_retry[T](
+    awaitable: Callable[[], Awaitable[T]],
     retries: int = DEFAULT_RETRIES,
     delay: float | None = None,
     catch_exceptions: type[Exception] | tuple[type[Exception], ...] | None = None,
-    recover: AsyncCallable | None = None,
+    recover: Callable[[], Awaitable[None]] | None = None,
     operation_name: str | None = None,
     log_prefix: str = "",
-) -> Any:
+) -> T:
     """
     Awaits a callable with a retry mechanism and optional recovery.
 
@@ -229,18 +229,3 @@ class GiveUpError(Exception):
 #     awaitable.
 #     """
 #     return awaitable_retriable(*args, **kwargs)(awaitable)
-
-
-# async def main() -> None:
-#     """Test func."""
-
-#     async def test_fn() -> None:
-#         raise ValueError
-
-#     with awaitable_retriable_ctx(test_fn, allowed_exceptions=[ValueError]) as fn:
-#         print(await fn())
-
-
-# if __name__ == "__main__":
-#     LOGGER.setLevel(logging.DEBUG)
-#     asyncio.run(main())
