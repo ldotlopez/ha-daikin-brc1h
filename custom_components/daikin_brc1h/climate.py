@@ -273,11 +273,44 @@ class IntegrationKadomaClimate(IntegrationKadomaEntity, ClimateEntity):
 
         return temp
 
+    @property
+    def current_temperature(self) -> float | None:
+        """Return the current temperature from the indoor sensor."""
+        sensors = self.coordinator.data.get("sensors")
+        if sensors is None:
+            return None
+        return sensors.get("indoor")
+
     async def async_set_temperature(self, *, temperature: float, **kwargs) -> None:
         temperature = round(temperature)
 
-        await self.unit.set_point.update(cooling=temperature, heating=temperature)
+        # The device enforces cooling_setpoint >= heating_setpoint + 1°C
+        # (minimum_differential field 0x32 in the setpoint BLE response, value 0x01).
+        # Setting both to the same value causes the device to silently reject the
+        # change that would violate the constraint, resulting in no visible update.
+        # Fix: keep the inactive setpoint 1°C away from the target.
+        operation_mode = self.coordinator.data.get("operation_mode")
+        set_point = self.unit.set_point
+
+        if operation_mode is kadoma.OperationModeValue.HEAT:
+            new_heating = temperature
+            new_cooling = temperature + 1
+        else:
+            # COOL mode (and AUTO/DRY fallback)
+            new_cooling = temperature
+            new_heating = temperature - 1
+
+        await set_point._send(  # noqa: SLF001
+            set_point.UPDATE_CMD_ID,
+            {
+                "cooling_set_point": set_point.convert_to_device(new_cooling),
+                "heating_set_point": set_point.convert_to_device(new_heating),
+            },
+        )
         self.coordinator.data["set_point"].update(
-            {"cooling_set_point": temperature, "heating_set_point": temperature}
+            {
+                "cooling_set_point": new_cooling,
+                "heating_set_point": new_heating,
+            }
         )
         self.async_write_ha_state()
